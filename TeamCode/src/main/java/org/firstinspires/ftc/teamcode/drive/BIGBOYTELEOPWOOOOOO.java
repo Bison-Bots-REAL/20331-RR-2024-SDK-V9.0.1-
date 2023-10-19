@@ -47,6 +47,7 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
     int pos = 0;
     DigitalChannel redfuny;
     DigitalChannel greenfuny;
+    private float speed = (float) 0;
 
     @Override
     public void runOpMode() {
@@ -80,6 +81,7 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
 
         topleft.setDirection(DcMotorSimple.Direction.REVERSE);
         bottomleft.setDirection(DcMotorSimple.Direction.REVERSE);
+        rightarm.setDirection(DcMotorEx.Direction.REVERSE);
 
         extendo.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         extendo.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -120,7 +122,7 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                         new Pose2d(
                                 (-gamepad1.left_stick_y + smc.b2d(gamepad1.dpad_up) - smc.b2d(gamepad1.dpad_down)),
                                 (-gamepad1.left_stick_x + smc.b2d(gamepad1.dpad_left) - smc.b2d(gamepad1.dpad_right)),
-                                (-gamepad1.right_stick_x + gamepad1.left_trigger - gamepad1.right_trigger)
+                                (-gamepad1.right_stick_x)// + gamepad1.left_trigger - gamepad1.right_trigger)
                         )
                 );
                 drive.update();
@@ -143,13 +145,30 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                     rightarm.setPower(0);
                 }
                 /*
-                if (gamepad2.left > 0) {
-                    spinny.setVelocity(gamepad1.right_trigger * (2760));
+                if (-gamepad2.right_stick_y > 0) {
+                    if (speed <= 1) {
+                        speed += 0.01*-gamepad2.right_stick_y;
+                    }
                 }
-                else {
-                    spinny.setVelocity(0);
+                else if (-gamepad2.right_stick_y < 0) {
+                    if (speed >= 0) {
+                        speed -= 0.01*gamepad2.right_stick_y;
+                    }
                 }
+                spinny.setVelocity(speed * (2760));
                  */
+                if (gamepad1.right_bumper) {
+                    spinny.setPower(1);
+                }
+                /*
+                else if (gamepad1.right_bumper) {
+                    spinny.setPower(0);
+                }
+                */
+                else {
+                    spinny.setPower(0);
+                }
+
                 if (gamepad2.left_stick_y > 0 && (extendo.getCurrentPosition() > 280) || gamepad2.guide) { //lonkus changed to 280 (original was 170)
                     extendo.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     extendo.setPower(-gamepad2.left_stick_y);
@@ -185,19 +204,19 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
 
                 //CONTROLS ADDED BY LONKUS
 
-                if (gamepad1.x) {
+                if (gamepad2.x) {
                     extendo.setTargetPosition(300);
                     extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 }
-                else if (gamepad1.a){
+                else if (gamepad2.a){
                     extendo.setTargetPosition(1450);
                     extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 }
-                else if (gamepad1.b){
+                else if (gamepad2.b){
                     extendo.setTargetPosition(2350);
                     extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 }
-                else if (gamepad1.y){
+                else if (gamepad2.y){
                     extendo.setTargetPosition(3300);
                     extendo.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 }
@@ -207,6 +226,8 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
 
                 telemetry.addData("Encoder Position", (extendo.getCurrentPosition()));
                 telemetry.addData("Vel", ((spinny.getVelocity() / 2760) * 100) + "%");
+                telemetry.addData("Wheel Velocity", (Math.round((spinny.getVelocity() / 2760) * 100)) + "%");
+                telemetry.addData("Launch Speed", (((spinny.getVelocity() / 537.6) * 7238.23)/10000) + "m/s");
                 telemetry.update();
             }
         }
