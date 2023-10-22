@@ -23,9 +23,8 @@ public class TeleOpFieldCentric extends LinearOpMode {
         // Initialize SampleMecanumDrive
         SampleMecanumDrive drive = new SampleMecanumDrive(hardwareMap);
 
-        // We want to turn off velocity control for teleop
+        // We want to turn off velocity control for teleop Lonkus note: PLEASE LEAVE IT ON FOR IT TO WORK
         // Velocity control per wheel is not necessary outside of motion profiled auto
-        drive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         waitForStart();
 

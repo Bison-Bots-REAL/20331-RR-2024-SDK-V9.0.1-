@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.drive;
 
 import com.acmerobotics.roadrunner.geometry.Pose2d;
+import com.acmerobotics.roadrunner.geometry.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -42,6 +43,8 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
     private DcMotorEx extendo;
     private Servo claw;
     private Servo wubbo;
+
+    private Servo booper;
     private DcMotorEx leftarm;
     private DcMotorEx rightarm;
     int pos = 0;
@@ -49,27 +52,33 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
     DigitalChannel greenfuny;
     private float speed = (float) 0;
 
+    private int bottomPos;
+    private float driveMultiplier;
+
     @Override
     public void runOpMode() {
         redfuny = hardwareMap.get(DigitalChannel.class, "red");
         greenfuny = hardwareMap.get(DigitalChannel.class, "gren");
         redfuny.setMode(DigitalChannel.Mode.OUTPUT);
         greenfuny.setMode(DigitalChannel.Mode.OUTPUT);
-        spinny = hardwareMap.get(DcMotorEx.class, "spinny");
+        spinny = hardwareMap.get(DcMotorEx.class, "spinny"); //103.8 counts per revolution
         extendo = hardwareMap.get(DcMotorEx.class, "extendo");
         topleft = hardwareMap.get(DcMotorEx.class, "topleft");
         bottomleft = hardwareMap.get(DcMotorEx.class, "bottomleft");
         topright = hardwareMap.get(DcMotorEx.class, "topright");
-        bottomright = hardwareMap.get(DcMotorEx.class, "bottomright");
         claw = hardwareMap.get(Servo.class, "claw");
         wubbo = hardwareMap.get(Servo.class, "wubbo");
+        booper = hardwareMap.get(Servo.class, "booper");
         leftarm = hardwareMap.get(DcMotorEx.class, "leftarm");
         rightarm = hardwareMap.get(DcMotorEx.class, "rightarm");
         redfuny.setState(false);
         greenfuny.setState(true);
+        claw.setPosition(1);
+        wubbo.setPosition(0.4);
         initAprilTag();
         if (USE_WEBCAM)
             setManualExposure(6, 250);  // Use low exposure time to reduce motion blur
+        bottomright = hardwareMap.get(DcMotorEx.class, "bottomright");
         telemetry.addData("Camera preview on/off", "3 dots, Camera Stream");
         telemetry.addData(">", "Touch Play to start OpMode");
         telemetry.update();
@@ -83,8 +92,16 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
         bottomleft.setDirection(DcMotorSimple.Direction.REVERSE);
         rightarm.setDirection(DcMotorEx.Direction.REVERSE);
 
+        spinny.setDirection(DcMotorEx.Direction.REVERSE);
+
         extendo.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         extendo.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        bottomPos = 280;
+
+        driveMultiplier = 1;
+
+
 
         waitForStart();
         while (opModeIsActive()) {
@@ -118,6 +135,39 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
 
                 //COMMENTTED OUT BY LONKUS
 
+                if (gamepad1.right_bumper) {
+                    driveMultiplier = 0.25F;
+                }
+                else if (gamepad1.left_bumper) {
+                    driveMultiplier = 0.5F;
+                }
+                else {
+                    driveMultiplier = 1F;
+                }
+
+                Pose2d poseEstimate = drive.getPoseEstimate();
+
+                // Create a vector from the gamepad x/y inputs
+                // Then, rotate that vector by the inverse of that heading
+                Vector2d input = new Vector2d(
+                        (-gamepad1.left_stick_y * driveMultiplier),
+                        (-gamepad1.left_stick_x * driveMultiplier)
+                ).rotated(-poseEstimate.getHeading()); //(-poseEstimate.getHeading()) can be used to reverse, but I suspect this was our issue
+
+
+                // Pass in the rotated input + right stick value for rotation
+                // Rotation is not part of the rotated input thus must be passed in separately
+                drive.setWeightedDrivePower(
+                        new Pose2d(
+                                input.getX(),
+                                input.getY(),
+                                (-gamepad1.right_stick_x * driveMultiplier)
+                        )
+                );
+
+                drive.update();
+
+                /*
                 drive.setWeightedDrivePower(
                         new Pose2d(
                                 (-gamepad1.left_stick_y + smc.b2d(gamepad1.dpad_up) - smc.b2d(gamepad1.dpad_down)),
@@ -126,6 +176,22 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                         )
                 );
                 drive.update();
+
+                 */
+
+
+
+                if (gamepad1.start) {
+                    Pose2d startpose = new Pose2d(0, 0, 0);
+                    drive.setPoseEstimate(startpose);
+                }
+
+                if (gamepad2.start) {
+                    bottomPos = extendo.getCurrentPosition();
+                }
+                if (gamepad2.back) {
+                    extendo.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                }
                 /*
                 topleft.setPower((-gamepad1.left_stick_y)-gamepad1.left_trigger+gamepad1.right_trigger);
                 bottomleft.setPower((-gamepad1.left_stick_y)+gamepad1.left_trigger-gamepad1.right_trigger);
@@ -133,12 +199,12 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                 bottomright.setPower((-gamepad1.right_stick_y)-gamepad1.left_trigger+gamepad1.right_trigger);
                 */
                 if (gamepad1.right_trigger > 0) {
-                    leftarm.setPower(1);
-                    rightarm.setPower(1);
+                    leftarm.setPower(gamepad1.right_trigger);
+                    rightarm.setPower(gamepad1.right_trigger);
                 }
                 else if (gamepad1.left_trigger > 0) {
-                    leftarm.setPower(-1);
-                    rightarm.setPower(-1);
+                    leftarm.setPower(-gamepad1.left_trigger);
+                    rightarm.setPower(-gamepad1.left_trigger);
                 }
                 else {
                     leftarm.setPower(0);
@@ -157,8 +223,8 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                 }
                 spinny.setVelocity(speed * (2760));
                  */
-                if (gamepad1.right_bumper) {
-                    spinny.setPower(1);
+                if (gamepad2.right_bumper) {
+                    spinny.setVelocity((1 * 2860)); //2860 is max velocity 1 * can be changed to any decimal in place of a %
                 }
                 /*
                 else if (gamepad1.right_bumper) {
@@ -166,10 +232,10 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                 }
                 */
                 else {
-                    spinny.setPower(0);
+                    spinny.setVelocity(0);
                 }
 
-                if (gamepad2.left_stick_y > 0 && (extendo.getCurrentPosition() > 280) || gamepad2.guide) { //lonkus changed to 280 (original was 170)
+                if (gamepad2.left_stick_y > 0 && (extendo.getCurrentPosition() > bottomPos) || gamepad2.guide) { //lonkus changed to 280 (original was 170)
                     extendo.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
                     extendo.setPower(-gamepad2.left_stick_y);
                     pos = extendo.getCurrentPosition();
@@ -187,22 +253,24 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
                     claw.setPosition(0);
                 }
                 else if (gamepad2.left_trigger > 0) {
-                    claw.setPosition(1f);
+                    claw.setPosition(0.7);
                 }
-                if (gamepad2.dpad_down) {
-                    wubbo.setPosition(0.05); //Lonkus changed to 0.03 (original was 0)
+
+                if (gamepad2.right_stick_y > 0.1) {
+                    wubbo.setPosition(0.04); //Lonkus changed to 0.04 (original was 0.05)
                 }
-                else if (gamepad2.dpad_up){
-                    wubbo.setPosition(.4);
-                }
-                else if (gamepad2.dpad_right){
-                    wubbo.setPosition(.3);
-                }
-                else if (gamepad2.dpad_left){
+                else if (gamepad2.right_stick_y < -0.1){
                     wubbo.setPosition(.25);
                 }
 
                 //CONTROLS ADDED BY LONKUS
+
+                if (gamepad2.left_bumper) {
+                    booper.setPosition(0.4); //Lonkus original value 0.4
+                }
+                else {
+                    booper.setPosition(0.3); //Lonkus original value 0.3
+                }
 
                 if (gamepad2.x) {
                     extendo.setTargetPosition(300);
@@ -225,9 +293,10 @@ public class BIGBOYTELEOPWOOOOOO extends LinearOpMode {
 
 
                 telemetry.addData("Encoder Position", (extendo.getCurrentPosition()));
-                telemetry.addData("Vel", ((spinny.getVelocity() / 2760) * 100) + "%");
-                telemetry.addData("Wheel Velocity", (Math.round((spinny.getVelocity() / 2760) * 100)) + "%");
-                telemetry.addData("Launch Speed", (((spinny.getVelocity() / 537.6) * 7238.23)/10000) + "m/s");
+
+                telemetry.addData("Raw spinny Velocity", spinny.getVelocity());
+                telemetry.addData("Launch RPM", Math.round((spinny.getVelocity() / 103.8)*60));
+                telemetry.addData("Launch Speed", (((spinny.getVelocity() / 103.8) * 7238.23)/10000) + "m/s");
                 telemetry.update();
             }
         }
